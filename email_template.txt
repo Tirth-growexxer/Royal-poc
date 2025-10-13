@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+    body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 20px; background: #f5f5f5; }}
+    .email-container {{ max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden; }}
+    .header {{ background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 25px; text-align: center; }}
+    .header h1 {{ margin: 0; font-size: 24px; }}
+    .content {{ padding: 25px; }}
+    .success-badge {{ background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; font-weight: bold; }}
+    .details-card {{background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #28a745; }}
+    .detail-row {{ margin-bottom: 8px; }}
+    .detail-label {{ font-weight: bold; color: #495057; display: inline-block; width: 130px; }}
+    .detail-value {{ color: #212529; }}
+    .pdf-notice {{ background: #e8f5e8; border: 2px solid #4CAF50; color: #2e7d2e; padding: 20px; border-radius: 8px; margin: 15px 0; text-align: center; }}
+    .comments-section {{ background: #e8f4f8; border-left: 4px solid #17a2b8; padding: 15px; margin: 15px 0; border-radius: 0 8px 8px 0; }}
+    .footer {{ background: #2c3e50; color: white; padding: 20px; text-align: center; }}
+</style>
+</head>
+<body>
+<div class="email-container">
+<div class="content">
+<div class="success-badge">
+    APPROVED SUCCESSFULLY
+</div>
+<div class="details-card">
+<h3 style="margin-top: 0; color: #2c3e50;">👤 Request Information</h3>
+<br>
+<div class="detail-row"><span class="detail-label">Request ID:</span><span class="detail-value">{request_id}</span></div>
+<br>
+<div class="detail-row"><span class="detail-label">Employee:</span><span class="detail-value">{sender}</span></div>
+<div class="detail-row"><span class="detail-label">Email:</span><span class="detail-value">{sender_email}</span></div>
+<div class="detail-row"><span class="detail-label">Department:</span><span class="detail-value">{department}</span></div>
+<div class="detail-row"><span class="detail-label">Designation:</span><span class="detail-value">{designation}</span></div>
+<br>
+<div class="detail-row"><span class="detail-label">Request Type:</span><span class="detail-value">{request_type}</span></div>
+<br>
+<div class="detail-row"><span class="detail-label">Approval Date:</span><span class="detail-value">{today}</span></div><br>
+<h3 style="margin-top: 0;">📎   Professional Service Letter Document Attached</h3>
+<p style="margin-bottom: 0;">The attached document is ready for official use, printing, and record keeping.</p>
+</div>
+</div>
+<div class="footer">
+<div style="font-size: 16px; font-weight: bold; margin-bottom: 5px;">Royal Group</div>
+<div style="font-size: 12px;">HR Management System - Automated Approval Service</div>
+</div>
+</div>
+</body>
+</html>

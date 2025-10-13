@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apex Template 1</title>
+    <style>
+        .center-text {{
+            text-align: center;
+        }}
+        
+        .verdana-font {{
+            font-family: Verdana, Geneva, sans-serif;
+        }}
+        
+        .title-large {{
+            font-size: 48px;
+            line-height: 115%;
+        }}
+        
+        .rtl-text {{
+            font-size: 15px;
+            line-height: 115%;
+            font-family: Verdana, Geneva, sans-serif;
+            color: black;
+        }}
+        
+        .main-table {{
+            border: 0;
+            cellspacing: 0;
+            cellpadding: 0;
+            display: flex;
+            justify-content: center;
+        }}
+        
+        .header-cell {{
+            background: rgb(217, 244, 255);
+            padding: 0cm 5.4pt;
+            height: 14.4pt;
+            vertical-align: top;
+            text-align: left;
+        }}
+        
+        .data-cell {{
+            padding: 0cm 5.4pt;
+            height: 14.4pt;
+            vertical-align: top;
+            text-align: left;
+        }}
+        
+        .special-header-cell {{
+            background: rgb(146, 208, 80);
+            padding: 0cm 5.4pt;
+            height: 14.4pt;
+            vertical-align: top;
+            text-align: left;
+        }}
+        
+        .cell-text {{
+            line-height: normal;
+            font-size: 15px;
+            font-family: Calibri, sans-serif;
+            margin: 0cm;
+        }}
+        
+        .cell-text-left {{
+            line-height: normal;
+            font-size: 15px;
+            font-family: Calibri, sans-serif;
+            margin: 0cm;
+            text-align: left;
+        }}
+        
+        .cell-text-right {{
+            line-height: normal;
+            font-size: 15px;
+            font-family: Calibri, sans-serif;
+            margin: 0cm;
+            text-align: right;
+        }}
+        
+        .black-text {{
+            color: black;
+        }}
+        
+        .subject-text {{
+            font-family: Verdana, Geneva, sans-serif;
+            color: black;
+            font-size: 48px;
+        }}
+        
+        .table-selector {{
+            text-align: center;
+        }}
+        
+        .table-selector-1 {{
+            top: 54px;
+            left: 44.1875px;
+            text-align: center;
+        }}
+        
+        .table-selector-2 {{
+            top: 125px;
+            left: 54.1875px;
+            text-align: center;
+        }}
+        
+        .table-selector-3 {{    
+            top: 243.203px;
+            left: 44.1875px;
+            text-align: center;
+        }}
+        
+        .table-selector-4 {{
+            top: -102.797px;
+            left: 44.1875px;
+            text-align: center;
+        }}
+    </style>
+</head>
+<body>
+
+<p class="center-text"><span class="verdana-font"><br></span></p>
+
+<p class="center-text"><span class="verdana-font"><br></span></p>
+
+<p class="center-text"><span class="verdana-font"><u data-pasted="true"><span class="title-large">Royal Group(</span></u></span><span dir="RTL" class="rtl-text">كتاب داخلي</span><span class="verdana-font"><u><span class="title-large">)</span></u></span></p>
+
+<p class="center-text"><span class="verdana-font"><br></span></p>
+
+<table class="main-table" data-pasted="true">
+<tbody>
+<tr>
+<td valign="top" class="header-cell">
+
+<p class="cell-text"><span class="verdana-font"><strong><span class="black-text">Approval Type</span></strong></span></p>
+</td>
+<td valign="top" class="data-cell">
+
+<p class="cell-text-left"><span class="verdana-font black-text">{approval_type}</span></p>
+</td>
+<td valign="top" class="header-cell">
+
+<p class="cell-text"><span class="verdana-font"><strong><span class="black-text">Transaction Status</span></strong></span></p>
+</td>
+<td valign="top" class="data-cell">
+
+<p class="cell-text-left"><span class="verdana-font black-text">{transaction_status}</span></p>
+</td>
+<td valign="top" class="header-cell">
+
+<p class="cell-text"><span class="verdana-font"><strong><span class="black-text">Book Language</span></strong></span></p>
+</td>
+<td valign="top" class="data-cell">
+
+<p class="cell-text-left"><span class="verdana-font black-text">{book_language}</span></p>
+</td>
+</tr>
+<tr>
+<td valign="top" class="header-cell">
+
+<p class="cell-text"><span class="verdana-font"><strong><span class="black-text">Transaction Creator</span></strong></span></p>
+</td>
+<td valign="top" class="data-cell">
+
+<p class="cell-text-left"><span class="verdana-font black-text">{transaction_creator}</span></p>
+</td>
+<td valign="top" class="header-cell">
+
+<p class="cell-text"><span class="verdana-font"><strong><span class="black-text">Receiver</span></strong></span></p>
+</td>
+<td valign="top" class="data-cell">
+
+
+<p class="cell-text-left"><span class="verdana-font black-text">{receiver}</span></p>
+</td>
+<td valign="top" class="header-cell">
+
+<p class="cell-text"><span class="verdana-font"><strong><span class="black-text">Transaction Date</span></strong></span></p>
+</td>
+<td valign="top" class="data-cell">
+
+<p class="cell-text-left"><span class="verdana-font black-text">{transaction_date}</span></p>
+</td>
+</tr>
+<tr>
+<td valign="top" class="header-cell">
+
+<p class="cell-text"><span class="verdana-font"><strong><span class="black-text">Sender</span></strong></span></p>
+</td>
+<td valign="top" class="data-cell">
+
+<p class="cell-text-left"><span class="verdana-font black-text">{sender}</span></p>
+</td>
+<td valign="top" class="header-cell">
+
+<p class="cell-text"><span class="verdana-font"><strong><span class="black-text">Confidentiality</span></strong></span></p>
+</td>
+<td valign="top" class="data-cell">
+
+<p class="cell-text-left"><span class="verdana-font black-text">{confidentiality}&nbsp;</span></p>
+</td>
+<td valign="top" class="special-header-cell">
+
+<p class="cell-text"><span class="verdana-font"><strong><span class="black-text">Transaction Type</span></strong></span></p>
+</td>
+<td valign="top" class="data-cell">
+
+<p dir="RTL" class="cell-text-left"><span class="verdana-font black-text"> {transaction_type}</span></p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="table-selector-1"><span class="verdana-font"><a tabindex="-1" title="Select Table" class="verdana-font"></a></span></div>
+
+<p class="center-text"><span class="verdana-font"><br></span></p>
+
+<p class="cell-text center-text" data-pasted="true"><span class="subject-text">{subject}</span></p>
+
+<p class="center-text"><span class="verdana-font"><br></span></p>
+
+<p><span class="verdana-font">{l1}</span></p>
+
+<p class="center-text"><span class="verdana-font">{l2}</span></p>
+<div class="fr-table-selector fr-table-selector-inactive table-selector-2"><span class="verdana-font"><a tabindex="-1" title="Select Table" class="verdana-font"></a></span></div>
+<div class="fr-table-selector fr-table-selector-inactive table-selector-3"><span class="verdana-font"><a tabindex="-1" title="Select Table" class="verdana-font"></a></span></div>
+
+<p class="center-text"><span class="verdana-font">{l3}</span></p>
+
+<p class="center-text">
+<br>
+</p>
+
+<p class="center-text">
+<br>
+</p>
+<div class="fr-table-selector fr-table-selector-inactive table-selector-4">
+<a tabindex="-1" title="Select Table"></a></div>
+
+<p>
+<br>
+</p>
+
+</body>
+</html>
