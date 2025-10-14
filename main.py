@@ -20,9 +20,9 @@ import smtplib
 
 
 
-# sm = SecretManager()
-# # Pass a sensible default so get_secret never returns None unexpectedly
-# secrets = sm.get_secret(default={})
+sm = SecretManager()
+# Pass a sensible default so get_secret never returns None unexpectedly
+secrets = sm.get_secret(default={})
 
 
 def html_to_pdf(html_content, output_filename):
@@ -210,8 +210,8 @@ def get_email_content(data_dict, template_file_path="email_template.txt"):
 with open('config.json') as config_file:
     config = json.load(config_file)
 
-username = config['smtp_username']
-password = config['smtp_password']
+username = secrets.get("email_username")
+password = secrets.get("email_password")
 
 SMTP_SERVER = config['smtp_server']
 SENDER_EMAIL = config['sender_email']
