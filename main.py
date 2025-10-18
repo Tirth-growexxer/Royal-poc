@@ -8,7 +8,7 @@ from io import BytesIO
 from secret_manager_local import SecretManager
 from pydantic import BaseModel
 from typing import Optional
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from datetime import datetime
 import os
 import traceback
@@ -17,6 +17,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from email.message import EmailMessage
 import smtplib
+import oci
+from oci.object_storage import ObjectStorageClient
 
 
 
@@ -219,6 +221,160 @@ SMTP_USERNAME = username
 SMTP_PASSWORD = password
 SMTP_PORT = config['smtp_port']
 
+# -------------------------------
+# OCI CONFIGURATION
+# -------------------------------
+# Read OCI private key from file
+def load_oci_private_key():
+    """Load OCI private key from file path specified in config"""
+    try:
+        key_path = config.get("oci_private_key_path")
+        if not key_path:
+            print("Warning: oci_private_key_path not found in config.json")
+            return None
+        
+        if not os.path.exists(key_path):
+            print(f"Warning: OCI private key file not found at: {key_path}")
+            return None
+        
+        with open(key_path, 'r') as key_file:
+            private_key_content = key_file.read()
+        
+        return private_key_content
+        
+    except Exception as e:
+        print(f"Error loading OCI private key: {str(e)}")
+        return None
+
+# OCI Configuration from config.json
+oci_private_key = load_oci_private_key()
+OCI_CONFIG = {
+    "user": config.get("oci_user_ocid"),
+    "key_content": oci_private_key,
+    "fingerprint": config.get("oci_fingerprint"),
+    "tenancy": config.get("oci_tenancy_ocid"),
+    "region": config.get("oci_region", "us-ashburn-1")
+}
+
+OCI_BUCKET_NAME = config.get("oci_bucket_name")
+OCI_FOLDER_NAME = config.get("oci_folder_name")
+OCI_NAMESPACE = config.get("oci_namespace")
+
+# Initialize OCI Object Storage client
+try:
+    oci_config = oci.config.from_file() if os.path.exists(os.path.expanduser("~/.oci/config")) else OCI_CONFIG
+    object_storage_client = ObjectStorageClient(oci_config)
+except Exception as e:
+    print(f"Warning: Failed to initialize OCI client: {str(e)}")
+    object_storage_client = None
+
+# -------------------------------
+# OCI UPLOAD FUNCTION
+# -------------------------------
+def upload_pdf_to_oci(file_path, request_id, transaction_type):
+    """
+    Upload PDF file to OCI Object Storage bucket.
+    
+    Args:
+        file_path (str): Local path to the PDF file
+        request_id (str): Request ID for naming
+        transaction_type (str): Type of transaction for naming
+    
+    Returns:
+        str: OCI object name if successful, None if failed
+    """
+    if not object_storage_client or not OCI_NAMESPACE:
+        print("OCI client not available or namespace not configured")
+        return None
+    
+    try:
+        # Create object name with folder path and request_id prefix
+        file_name = os.path.basename(file_path)
+        object_name = f"{OCI_FOLDER_NAME}/{request_id}_{transaction_type.replace(' ', '_')}.pdf"
+        
+        # Check if local file exists
+        if not os.path.exists(file_path):
+            return None
+        
+        # Upload file to OCI
+        with open(file_path, 'rb') as file_data:
+            object_storage_client.put_object(
+                namespace_name=OCI_NAMESPACE,
+                bucket_name=OCI_BUCKET_NAME,
+                object_name=object_name,
+                put_object_body=file_data,
+                content_type='application/pdf'
+            )
+        
+        return object_name
+        
+    except Exception as e:
+        print(f"Error uploading PDF to OCI: {str(e)}")
+        return None
+
+# -------------------------------
+# OCI DOWNLOAD FUNCTION
+# -------------------------------
+def search_and_download_pdf_by_id(search_id):
+    """
+    Search for PDF file in OCI bucket by ID prefix and download it.
+    
+    Args:
+        search_id (str): ID to search for (files should start with this ID)
+    
+    Returns:
+        tuple: (file_path, object_name) if found, (None, None) if not found
+    """
+    if not object_storage_client or not OCI_NAMESPACE:
+        print("OCI client not available or namespace not configured")
+        return None, None
+    
+    try:
+        # List objects in bucket with folder prefix and search_id
+        search_prefix = f"{OCI_FOLDER_NAME}/{search_id}_"
+        
+        list_objects_response = object_storage_client.list_objects(
+            namespace_name=OCI_NAMESPACE,
+            bucket_name=OCI_BUCKET_NAME,
+            prefix=search_prefix,
+            fields="name,size,timeCreated"
+        )
+        
+        objects = list_objects_response.data.objects
+        
+        if not objects:
+            return None, None
+        
+        # Find the first PDF file (you can modify this logic if needed)
+        pdf_object = None
+        for obj in objects:
+            if obj.name.lower().endswith('.pdf'):
+                pdf_object = obj
+                break
+        
+        if not pdf_object:
+            return None, None
+        
+        # Download the file
+        get_object_response = object_storage_client.get_object(
+            namespace_name=OCI_NAMESPACE,
+            bucket_name=OCI_BUCKET_NAME,
+            object_name=pdf_object.name
+        )
+        
+        # Save to temporary file (extract just the filename, not the full path)
+        original_filename = os.path.basename(pdf_object.name)  # Gets "441_INNER_BOOK.pdf" from "royal_group/441_INNER_BOOK.pdf"
+        temp_file_path = f"temp_{original_filename}"
+        
+        with open(temp_file_path, 'wb') as f:
+            for chunk in get_object_response.data.raw.stream(1024 * 1024, decode_content=False):
+                f.write(chunk)
+        
+        return temp_file_path, pdf_object.name
+        
+    except Exception as e:
+        print(f"Error searching/downloading PDF from OCI: {str(e)}")
+        return None, None
 
 # -------------------------------
 # EXTRACT DOCUMENT NAME FROM FILENAME
@@ -412,6 +568,7 @@ class approve_letters(BaseModel):
     file_name: str
     mime_type: str  # Format: "application/pdf", "image/jpeg", etc.
     file_data: str 
+    transaction_creator_email : str
     notes_on_request: str # Base64 encoded file content
     # l2: str
     # l3: str
@@ -430,6 +587,7 @@ async def generate_emp_service_letter(details: approve_letters):
     transaction_status = details.transaction_status
     book_language = details.book_language
     transaction_creator = details.transaction_creator
+    transaction_creator_email = details.transaction_creator_email
     sender = details.sender
     receiver = details.receiver
     transaction_date = details.transaction_date
@@ -446,19 +604,19 @@ async def generate_emp_service_letter(details: approve_letters):
     
     # Generate PDF filename and email subject based on transaction_type
     if transaction_type == "INNER BOOK":
-        pdf_filename = f"Inner Book.pdf"
+        pdf_filename = f"{request_id}_Inner Book.pdf"
         email_subject = f"Inner Book - Request ID - {request_id} – Approved"
     elif transaction_type == "CERTIFICATE LETTER":
-        pdf_filename = f"Certificate.pdf"
+        pdf_filename = f"{request_id}_Certificate.pdf"
         email_subject = f"Certificate - Request ID - {request_id} – Approved"
     elif transaction_type == "OUTER BOOK":
-        pdf_filename = f"Outer Book.pdf"
+        pdf_filename = f"{request_id}_Outer Book.pdf"
         email_subject = f"Outer Book - Request ID - {request_id} – Approved"
-    elif transaction_type == "MEMO":
-        pdf_filename = f"Memo.pdf"
+    elif transaction_type == "MEMO" or transaction_type == "NOTE":
+        pdf_filename = f"{request_id}_Memo.pdf"
         email_subject = f"Memo - Request ID - {request_id} – Approved"
     else:
-        pdf_filename = f"Document.pdf"
+        pdf_filename = f"{request_id}_Document.pdf"
         email_subject = f"Document - Request ID - {request_id} – Approved"
 
     print(f"""
@@ -476,6 +634,8 @@ Transaction Status  : {details.transaction_status}
 Book Language       : {details.book_language}
 Transaction Creator : {details.transaction_creator}
 Sender              : {details.sender}
+sender Email        : {details.sender_email}
+receiver Email      : {details.receiver_email}
 Receiver            : {details.receiver}
 Transaction Date    : {details.transaction_date}
 Transaction Type    : {details.transaction_type}
@@ -485,9 +645,11 @@ File Name           : {details.file_name}
 MIME Type          : {details.mime_type}
 File Data Size     : {len(details.file_data)} chars
 notes_on_request   : {details.notes_on_request}
+transaction_creator_email : {details.transaction_creator_email}
 """)
 
 
+# Transaction Creator Email: {details.transaction_creater_email}
 
     
     try:
@@ -539,7 +701,7 @@ notes_on_request   : {details.notes_on_request}
         extra_file_path = create_file_from_base64(file_data, mime_type, file_name)
         
         # Send email to receiver (current flow - no change)
-        send_email_with_attachment(pdf_path, html_mail_content, receiver_email, request_id, email_subject, cc_emails)
+        send_email_with_attachment(pdf_path, html_mail_content, transaction_creator_email, request_id, email_subject, cc_emails)
         
         # Send email to sender with additional file attachment only if file was created successfully
         if extra_file_path and os.path.exists(extra_file_path):
@@ -549,19 +711,77 @@ notes_on_request   : {details.notes_on_request}
             print(f"Failed to create extra file from base64 data. Sending regular email to sender ({sender_email})")
             send_email_with_attachment(pdf_path, html_mail_content, sender_email, request_id, email_subject, cc_emails)
 
-        # Cleanup files
-        if os.path.exists(pdf_path):
-            os.remove(pdf_path)
-            print(f"{pdf_path} has been deleted.")
-        else:
-            print("PDF file does not exist.")
-            
-        if extra_file_path and os.path.exists(extra_file_path):
-            os.remove(extra_file_path)
-            print(f"{extra_file_path} has been deleted.")
-        else:
-            print("Extra file does not exist or was not created.")
-        return JSONResponse({"status": "success", "pdf_path": pdf_path})
+        # Upload PDF to OCI bucket after sending emails
+        oci_object_name = upload_pdf_to_oci(pdf_path, request_id, transaction_type)
+
+        return JSONResponse({
+            "status": "success", 
+            "pdf_path": pdf_path,
+            "oci_object_name": oci_object_name
+        })
     except Exception as e:
         traceback.print_exc()
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+
+# -------------------------------
+# API ENDPOINT TO GET PDF BY ID
+# -------------------------------
+class GetPDFRequest(BaseModel):
+    id: str
+
+@app.post("/get_pdf_by_id")
+async def get_pdf_by_id(request: GetPDFRequest):
+    """
+    Search for PDF file in OCI bucket by ID and return it.
+    
+    Args:
+        request: GetPDFRequest containing the ID to search for
+    
+    Returns:
+        FileResponse: PDF file if found, error message if not found
+    """
+    try:
+        search_id = request.id.strip()
+        
+        if not search_id:
+            return JSONResponse(
+                {"status": "error", "message": "ID parameter is required"}, 
+                status_code=400
+            )
+        
+        # Search and download PDF from OCI
+        file_path, object_name = search_and_download_pdf_by_id(search_id)
+        
+        if not file_path or not object_name:
+            return JSONResponse(
+                {"status": "error", "message": f"No PDF found with ID starting with: {search_id}"}, 
+                status_code=404
+            )
+        
+        # Return the file as response
+        def cleanup_file():
+            """Clean up temporary file after response is sent"""
+            try:
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+            except Exception as e:
+                print(f"Error cleaning up file {file_path}: {str(e)}")
+        
+        # Return file response with cleanup
+        response = FileResponse(
+            path=file_path,
+            filename=object_name,
+            media_type='application/pdf',
+            background=cleanup_file
+        )
+        
+        return response
+        
+    except Exception as e:
+        print(f"Error in get_pdf_by_id API: {str(e)}")
+        traceback.print_exc()
+        return JSONResponse(
+            {"status": "error", "message": f"Internal server error: {str(e)}"}, 
+            status_code=500
+        )
