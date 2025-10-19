@@ -670,6 +670,17 @@ transaction_creator_email : {details.transaction_creator_email}
         # Process notes_on_request to remove paragraph tags
         processed_notes = remove_paragraph_tags(notes_on_request)
         
+        # Convert signature image to base64
+        signature_image_base64 = ""
+        signature_image_path = "/home/growlt307/Desktop/oracle_poc2/Royal-poc/sign.jpg"
+        try:
+            if os.path.exists(signature_image_path):
+                with open(signature_image_path, 'rb') as img_file:
+                    signature_data = base64.b64encode(img_file.read()).decode('utf-8')
+                    signature_image_base64 = f"data:image/jpeg;base64,{signature_data}"
+        except Exception as e:
+            signature_image_base64 = ""
+        
         custom_data = {
             "approval_type": approval_type,
             "transaction_status": transaction_status,
@@ -683,22 +694,27 @@ transaction_creator_email : {details.transaction_creator_email}
             "subject": subject,
             "l1": processed_notes,
             "l2": "",
-            "l3": ""
+            "l3": "",
+            "signature_image": signature_image_base64,
+            "signature_display": "block" if signature_image_base64 else "none",
+            "signatory_name": "Hardik Seth",
+            "signatory_title": "Senior Manager",
+            "signatory_designation": ""
         }
 
         html_content = get_html_content(custom_data)
     
         if html_content:
             pdf_path = html_to_pdf(html_content, pdf_filename)
-            if pdf_path:
-                print(f"Conversion completed! PDF saved as: {pdf_path}")
-            else:
-                print("PDF conversion failed!")
+            if not pdf_path:
+                return JSONResponse({"status": "error", "message": "PDF generation failed"}, status_code=500)
         else:
-            print("Failed to load and process HTML template!")
+            return JSONResponse({"status": "error", "message": "Template loading failed"}, status_code=500)
 
-        # Create file from base64 data
-        extra_file_path = create_file_from_base64(file_data, mime_type, file_name)
+        # Create file from base64 data (only if all parameters are provided)
+        extra_file_path = None
+        if file_data and mime_type and file_name:
+            extra_file_path = create_file_from_base64(file_data, mime_type, file_name)
         
         # Send email to receiver (current flow - no change)
         send_email_with_attachment(pdf_path, html_mail_content, transaction_creator_email, request_id, email_subject, cc_emails)
@@ -706,9 +722,7 @@ transaction_creator_email : {details.transaction_creator_email}
         # Send email to sender with additional file attachment only if file was created successfully
         if extra_file_path and os.path.exists(extra_file_path):
             send_email_with_extra_attachment(pdf_path, html_mail_content, sender_email, request_id, email_subject, cc_emails, extra_file_path)
-            print(f"Sent email to sender ({sender_email}) with extra attachment: {extra_file_path}")
         else:
-            print(f"Failed to create extra file from base64 data. Sending regular email to sender ({sender_email})")
             send_email_with_attachment(pdf_path, html_mail_content, sender_email, request_id, email_subject, cc_emails)
 
         # Upload PDF to OCI bucket after sending emails
