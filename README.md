@@ -1,10 +1,10 @@
-# Royal Group - HR Document Management API
+# Royal Group -Document Management API
 
-A FastAPI-based microservice for automated generation, distribution, and storage of HR documents (service letters, certificates, memos, and books) for the Royal Group HR Management System.
+A FastAPI-based microservice for automated generation, distribution, and storage of documents (service letters, certificates, memos, and books) for the Royal Group Management System.
 
 ## Overview
 
-This API service automates the workflow for generating official HR documents, converting them to PDF format, sending them via email, and storing them in Oracle Cloud Infrastructure (OCI) Object Storage. The system supports role-based access where managers and employees can request and retrieve documents through a frontend application.
+This API service automates the workflow for generating official documents, converting them to PDF format, sending them via email, and storing them in Oracle Cloud Infrastructure (OCI) Object Storage. The system supports role-based access where managers and employees can request and retrieve documents through a frontend application.
 
 ## Features
 
